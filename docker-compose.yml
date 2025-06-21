@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  openmanus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openmanus-main
+    environment:
+      - PYTHONPATH=/app/OpenManus
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount config directory for external configuration
+      - ./config:/app/OpenManus/config:ro
+      # Mount logs directory for persistent logs
+      - ./logs:/app/OpenManus/logs
+      # Mount downloads directory for persistent downloads
+      - ./downloads:/app/OpenManus/downloads
+      # Mount workspace directory for persistent workspace
+      - ./workspace:/app/OpenManus/workspace
+      # Mount Docker socket for sandbox functionality (if needed)
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:8000"
+    networks:
+      - openmanus-network
+    restart: unless-stopped
+    # Override default command for interactive mode
+    command: ["python", "main.py"]
+
+  openmanus-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openmanus-mcp-server
+    environment:
+      - PYTHONPATH=/app/OpenManus
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config:/app/OpenManus/config:ro
+      - ./logs:/app/OpenManus/logs
+      - ./downloads:/app/OpenManus/downloads
+      - ./workspace:/app/OpenManus/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8001:8000"
+    networks:
+      - openmanus-network
+    restart: unless-stopped
+    command: ["python", "run_mcp_server.py"]
+
+  # Optional: Add a web UI or API service
+  openmanus-flow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openmanus-flow
+    environment:
+      - PYTHONPATH=/app/OpenManus
+      - PYTHONUNBUFFERED=1 
+    volumes:
+      - ./config:/app/OpenManus/config:ro
+      - ./logs:/app/OpenManus/logs
+      - ./downloads:/app/OpenManus/downloads
+      - ./workspace:/app/OpenManus/workspace
+    ports:
+      - "8002:8000"
+    networks:
+      - openmanus-network
+    restart: unless-stopped
+    command: ["python", "run_flow.py"]
+
+networks:
+  openmanus-network:
+    driver: bridge
+
+volumes:
+  openmanus-logs:
+  openmanus-downloads:
+  openmanus-workspace:
